@@ -15,7 +15,7 @@ from database import (
     update_book_read_status,
     get_books_by_read_status
 )
-from ocr_service import process_image_ocr, clean_book_title, search_google_books
+from ocr_service import process_image_ocr, extract_book_info
 
 load_dotenv()
 
@@ -134,7 +134,7 @@ def scan_book():
         return jsonify({'success': False, 'error': 'Görüntü verisi bulunamadı'}), 400
     
     try:
-        # 1. OCR ile metni çıkar
+        # OCR ile metni çıkar
         ocr_text = process_image_ocr(image_data)
         
         if not ocr_text:
@@ -143,8 +143,8 @@ def scan_book():
                 'error': 'Görüntüden metin çıkarılamadı'
             }), 400
         
-        # 2. Kitap başlığını temizle
-        book_title = clean_book_title(ocr_text)
+        # Kitap başlığını ve yazarı çıkar
+        book_title, author = extract_book_info(ocr_text)
         
         if not book_title:
             return jsonify({
@@ -153,80 +153,16 @@ def scan_book():
                 'ocr_text': ocr_text
             }), 400
         
-        # 3. Google Books API'den kitap bilgilerini al
-        book_info = search_google_books(book_title)
-        
         return jsonify({
             'success': True,
-            'book': {
-                'title': book_info['title'],
-                'author': book_info['author'],
-                'found': book_info['found']
-            },
-            'ocr_text': ocr_text
+            'title': book_title,
+            'author': author or ''
         })
     
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/ocr/scan-and-add', methods=['POST'])
-def scan_and_add_book():
-    """
-    Kameradan gelen görüntüyü OCR ile işle ve doğrudan veritabanına ekle
-    """
-    data = request.json
-    image_data = data.get('image', '')
-    
-    if not image_data:
-        return jsonify({'success': False, 'error': 'Görüntü verisi bulunamadı'}), 400
-    
-    try:
-        # 1. OCR ile metni çıkar
-        ocr_text = process_image_ocr(image_data)
-        
-        if not ocr_text:
-            return jsonify({
-                'success': False,
-                'error': 'Görüntüden metin çıkarılamadı'
-            }), 400
-        
-        # 2. Kitap başlığını temizle
-        book_title = clean_book_title(ocr_text)
-        
-        if not book_title:
-            return jsonify({
-                'success': False,
-                'error': 'Kitap başlığı tespit edilemedi',
-                'ocr_text': ocr_text
-            }), 400
-        
-        # 3. Kitap zaten var mı kontrol et
-        if book_exists(book_title):
-            return jsonify({
-                'success': False,
-                'error': 'Bu kitap zaten koleksiyonunuzda mevcut',
-                'book_title': book_title
-            }), 409
-        
-        # 4. Google Books API'den kitap bilgilerini al
-        book_info = search_google_books(book_title)
-        
-        # 5. Veritabanına ekle
-        book_id = add_book(book_info['title'], book_info['author'])
-        
-        return jsonify({
-            'success': True,
-            'message': 'Kitap başarıyla eklendi',
-            'book': {
-                'id': book_id,
-                'title': book_info['title'],
-                'author': book_info['author'],
-                'found': book_info['found']
-            }
-        })
-    
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=True)

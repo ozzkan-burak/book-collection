@@ -2,7 +2,7 @@
 OCR ve Google Books API modülü
 """
 import pytesseract
-from PIL import Image
+from PIL import Image, ImageEnhance
 import requests
 import io
 import base64
@@ -30,95 +30,64 @@ def process_image_ocr(image_data):
         # PIL Image'a çevir
         image = Image.open(io.BytesIO(image_bytes))
         
+        # Görüntü ön işleme - kontrastı artır
+        from PIL import ImageEnhance
+        enhancer = ImageEnhance.Contrast(image)
+        image = enhancer.enhance(2.0)
+        
+        # Griye çevir
+        image = image.convert('L')
+        
         # OCR ile metin çıkar (Türkçe + İngilizce)
-        text = pytesseract.image_to_string(image, lang='tur+eng')
+        # PSM 3: Tam otomatik sayfa segmentasyonu
+        custom_config = r'--oem 3 --psm 3'
+        text = pytesseract.image_to_string(image, lang='tur+eng', config=custom_config)
         
         # Metni temizle
         text = text.strip()
+        
+        print(f"[DEBUG] OCR çıktısı uzunluğu: {len(text)} karakter")
         
         return text
     except Exception as e:
         raise Exception(f"OCR işlemi başarısız: {str(e)}")
 
-def clean_book_title(text):
+def extract_book_info(text):
     """
-    OCR'dan gelen metni temizle ve muhtemel kitap başlığını çıkar
+    OCR'dan gelen metinden kitap adı ve yazar bilgisini çıkar
+    
+    Returns:
+        tuple: (book_title, author)
     """
+    print(f"[DEBUG] OCR Ham Metin:\n{text}\n")
+    
     # Satır satır ayır
     lines = [line.strip() for line in text.split('\n') if line.strip()]
     
     if not lines:
-        return None
+        print("[DEBUG] Hiç satır bulunamadı")
+        return None, None
     
-    # En uzun satırı kitap başlığı olarak kabul et (genellikle en büyük font)
-    # veya ilk birkaç anlamlı satırı birleştir
-    title_candidates = []
-    for line in lines[:5]:  # İlk 5 satıra bak
-        # Çok kısa satırları atla
-        if len(line) > 3:
-            title_candidates.append(line)
+    print(f"[DEBUG] Bulunan satırlar: {lines}")
     
-    if title_candidates:
-        # En uzun olanı seç
-        title = max(title_candidates, key=len)
-        # Gereksiz karakterleri temizle
-        title = re.sub(r'[^\w\s\-:\'ğüşıöçĞÜŞİÖÇ]', '', title)
-        return title.strip()
+    # Anlamlı satırları filtrele
+    valid_lines = []
+    for line in lines[:10]:
+        if len(line) > 2:
+            # Gereksiz karakterleri temizle
+            cleaned = re.sub(r'[^\w\s\-:\'ğüşıöçĞÜŞİÖÇ.,!?]', '', line).strip()
+            if len(cleaned) > 2:
+                valid_lines.append(cleaned)
     
-    return None
-
-def search_google_books(query):
-    """
-    Google Books API'den kitap ara
+    if not valid_lines:
+        print("[DEBUG] Hiç geçerli satır bulunamadı")
+        return None, None
     
-    Args:
-        query: Arama sorgusu (kitap başlığı)
+    # İlk satır genellikle kitap adı, ikinci satır yazar
+    book_title = valid_lines[0]
+    author = valid_lines[1] if len(valid_lines) > 1 else None
     
-    Returns:
-        dict: {'title': '...', 'author': '...', 'found': True/False}
-    """
-    try:
-        api_key = os.getenv('GOOGLE_BOOKS_API_KEY', '')
-        base_url = 'https://www.googleapis.com/books/v1/volumes'
-        
-        params = {
-            'q': query,
-            'maxResults': 1,
-            'printType': 'books',
-            'langRestrict': 'tr|en'
-        }
-        
-        if api_key:
-            params['key'] = api_key
-        
-        response = requests.get(base_url, params=params, timeout=10)
-        response.raise_for_status()
-        
-        data = response.json()
-        
-        if data.get('totalItems', 0) > 0:
-            book = data['items'][0]['volumeInfo']
-            title = book.get('title', '')
-            authors = book.get('authors', [])
-            author = ', '.join(authors) if authors else 'Bilinmeyen Yazar'
-            
-            return {
-                'title': title,
-                'author': author,
-                'found': True
-            }
-        else:
-            return {
-                'title': query,
-                'author': 'Bilinmeyen Yazar',
-                'found': False
-            }
+    print(f"[DEBUG] Kitap adı: {book_title}")
+    print(f"[DEBUG] Yazar: {author}")
     
-    except Exception as e:
-        # API hatası durumunda OCR'dan gelen veriyi kullan
-        return {
-            'title': query,
-            'author': 'Bilinmeyen Yazar',
-            'found': False,
-            'error': str(e)
-        }
+    return book_title, author
