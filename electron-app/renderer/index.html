@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitap Koleksiyonu</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Kitap Koleksiyonum</h1>
+            <p class="subtitle">Kameradan kitap kapağını okutarak koleksiyonunuza ekleyin</p>
+        </header>
+
+        <main>
+            <!-- Kamera Bölümü -->
+            <section class="camera-section">
+                <div class="camera-container">
+                    <video id="video" autoplay></video>
+                    <canvas id="canvas" style="display: none;"></canvas>
+                </div>
+                
+                <div class="camera-controls">
+                    <button id="startCamera" class="btn btn-primary">📷 Kamerayı Başlat</button>
+                    <button id="captureBtn" class="btn btn-success" style="display: none;">📸 Fotoğraf Çek</button>
+                    <button id="stopCamera" class="btn btn-danger" style="display: none;">⏹️ Kamerayı Durdur</button>
+                </div>
+
+                <div id="status" class="status-message"></div>
+            </section>
+
+            <!-- Manuel Kitap Ekleme -->
+            <section class="manual-add-section">
+                <h2>Manuel Kitap Ekle</h2>
+                <form id="manualAddForm">
+                    <input type="text" id="bookTitle" placeholder="Kitap Adı" required>
+                    <input type="text" id="bookAuthor" placeholder="Yazar Adı" required>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="isRead">
+                        <span>Okudum</span>
+                    </label>
+                    <button type="submit" class="btn btn-primary">➕ Kitap Ekle</button>
+                </form>
+            </section>
+
+            <!-- Filtreler -->
+            <section class="filter-section">
+                <h2>Kitaplarım</h2>
+                <div class="filters">
+                    <button class="filter-btn active" data-filter="all">Tümü</button>
+                    <button class="filter-btn" data-filter="read">Okuduklarım</button>
+                    <button class="filter-btn" data-filter="unread">Okumadıklarım</button>
+                </div>
+                <input type="text" id="searchInput" placeholder="🔍 Kitap veya yazar ara..." class="search-input">
+            </section>
+
+            <!-- Kitap Listesi -->
+            <section class="books-section">
+                <div id="booksList" class="books-list">
+                    <p class="loading">Kitaplar yükleniyor...</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

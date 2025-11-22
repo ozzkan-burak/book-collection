@@ -1,0 +1,17 @@
+{
+  "name": "book-collection-app",
+  "version": "1.0.0",
+  "description": "Kitap koleksiyonu yönetim uygulaması - OCR ile kitap ekleme",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev"
+  },
+  "keywords": ["electron", "book", "collection", "ocr"],
+  "author": "Burak",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0"
+  },
+  "dependencies": {}
+}
