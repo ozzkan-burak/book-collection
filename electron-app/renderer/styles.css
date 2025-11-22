@@ -125,6 +125,7 @@ main {
   border: 2px solid #ddd;
   border-radius: 8px;
   font-size: 1em;
+  transition: border-color 0.3s ease;
 }
 
 #manualAddForm input[type='text']:focus {

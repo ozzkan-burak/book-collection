@@ -99,12 +99,26 @@ stopCameraBtn.addEventListener('click', () => {
 manualAddForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    const title = document.getElementById('bookTitle').value.trim();
-    const author = document.getElementById('bookAuthor').value.trim();
+    const titleInput = document.getElementById('bookTitle');
+    const authorInput = document.getElementById('bookAuthor');
+    const title = titleInput.value.trim();
+    const author = authorInput.value.trim();
     const isRead = document.getElementById('isRead').checked;
     
-    if (!title || !author) {
-        showStatus('Lütfen kitap adı ve yazar adını girin.', 'error');
+    // Validasyon: Boş alan kontrolü
+    if (!title) {
+        titleInput.focus();
+        titleInput.style.borderColor = '#dc3545';
+        showStatus('❌ Kitap adı boş bırakılamaz!', 'error');
+        setTimeout(() => titleInput.style.borderColor = '', 2000);
+        return;
+    }
+    
+    if (!author) {
+        authorInput.focus();
+        authorInput.style.borderColor = '#dc3545';
+        showStatus('❌ Yazar adı boş bırakılamaz!', 'error');
+        setTimeout(() => authorInput.style.borderColor = '', 2000);
         return;
     }
     
@@ -125,7 +139,12 @@ manualAddForm.addEventListener('submit', async (e) => {
             manualAddForm.reset();
             loadBooks();
         } else {
-            showStatus('❌ ' + result.error, 'error');
+            // Duplicate kitap hatası
+            if (response.status === 409) {
+                showStatus('⚠️ Bu kitap zaten koleksiyonunuzda mevcut!', 'error');
+            } else {
+                showStatus('❌ ' + result.error, 'error');
+            }
         }
     } catch (error) {
         showStatus('❌ Bağlantı hatası: ' + error.message, 'error');
