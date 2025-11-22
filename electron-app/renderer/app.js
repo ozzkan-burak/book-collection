@@ -51,7 +51,7 @@ captureBtn.addEventListener('click', async () => {
     captureBtn.disabled = true;
     
     try {
-        const response = await fetch(`${API_URL}/ocr/scan-and-add`, {
+        const response = await fetch(`${API_URL}/ocr/scan`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -62,8 +62,14 @@ captureBtn.addEventListener('click', async () => {
         const result = await response.json();
         
         if (result.success) {
-            showStatus(`✅ "${result.book.title}" kitabı koleksiyonunuza eklendi!`, 'success');
-            loadBooks(); // Listeyi yenile
+            // Input alanlarına doldur
+            document.getElementById('bookTitle').value = result.title;
+            document.getElementById('bookAuthor').value = result.author;
+            
+            showStatus('✅ Kitap bilgileri algılandı! Kontrol edip kaydedin.', 'success');
+            
+            // Manuel ekleme bölümüne scroll yap
+            document.querySelector('.manual-add-section').scrollIntoView({ behavior: 'smooth' });
         } else {
             showStatus('❌ ' + result.error, 'error');
         }
@@ -114,7 +120,8 @@ manualAddForm.addEventListener('submit', async (e) => {
         const result = await response.json();
         
         if (result.success) {
-            showStatus(`✅ "${title}" kitabı eklendi!`, 'success');
+            showTooltip('✅ Kitap başarıyla kaydedildi!');
+            showStatus(`✅ "${title}" kitabı koleksiyonunuza eklendi!`, 'success');
             manualAddForm.reset();
             loadBooks();
         } else {
@@ -260,6 +267,23 @@ function showStatus(message, type) {
     setTimeout(() => {
         statusDiv.classList.remove('show');
     }, 5000);
+}
+
+// Tooltip göster
+function showTooltip(message) {
+    const tooltip = document.createElement('div');
+    tooltip.className = 'tooltip-notification';
+    tooltip.textContent = message;
+    document.body.appendChild(tooltip);
+    
+    setTimeout(() => {
+        tooltip.classList.add('show');
+    }, 10);
+    
+    setTimeout(() => {
+        tooltip.classList.remove('show');
+        setTimeout(() => tooltip.remove(), 300);
+    }, 3000);
 }
 
 // Sayfa yüklendiğinde kitapları getir
